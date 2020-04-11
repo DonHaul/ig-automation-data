@@ -37,13 +37,15 @@ def LogIn( credentials):
     elem.click()
 
     #switch to insta tab
-    elem = browser.find_element_by_xpath('//*[@id="media_manager_chrome_bar_instagram_icon"]')
+    elem = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="media_manager_chrome_bar_instagram_icon"]')))
+    
+   
     elem.click()
 
     return browser
 
 
-def SchedulePost(data,browser):
+def SchedulePost(data,browser,postpath):
     '''
     receive data to post
     and the driver or browser
@@ -63,7 +65,8 @@ def SchedulePost(data,browser):
         time.sleep(1)
 
     #Ready to post
-
+    time.sleep(5)
+    print("Starting Posting Process")
 
     #Click Create Post
     elem = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.LINK_TEXT, "Create Post"))).click()
@@ -73,10 +76,10 @@ def SchedulePost(data,browser):
 
 
     #insert description in new post pan
-    descriptionelem = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH, "//*[@id='creator_studio_sliding_tray_root']/div/div/div[2]/div[1]/div/div[2]/div[1]/div/div/div[2]/div")))
+    descriptionelem = WebDriverWait(browser, 2).until(EC.presence_of_element_located((By.XPATH, "//*[@id='creator_studio_sliding_tray_root']/div/div/div[2]/div[1]/div/div[2]/div[1]/div/div/div[2]/div")))
 
     #send description. Line breaks are replaced by ENTERs    
-    descriptionelem.send_keys(data["Description"].replace("\n",Keys.ENTER))
+    descriptionelem.send_keys(data["Description"].replace("\n",chr(10240)+Keys.ENTER))
 
 
     if pandas.isnull(data['Location']) == False:
@@ -96,8 +99,12 @@ def SchedulePost(data,browser):
     #click the add content button, to make the input appear
     browser.find_elements_by_xpath("//*[contains(text(), 'Add content')]")[-1].click()
   
-    elem = browser.find_element_by_xpath('//input[@accept="video/*, image/*"]')
-    elem.send_keys(data['Image']);
+
+    #supports multiple images
+    imgs = data['Image'].split()
+    for img in imgs:
+        elem = browser.find_element_by_xpath('//input[@accept="video/*, image/*"]')
+        elem.send_keys(postpath + img + ".png");
 
     
 
@@ -107,6 +114,7 @@ def SchedulePost(data,browser):
     browser.find_elements_by_xpath('//i')[-1].click()
     browser.find_elements_by_xpath("//*[contains(text(), 'Schedule')]")[-1].click()
 
+    
 
     #if date is set, fetch it and inser it here
     if pandas.isnull(data['Post Date']) == False:    
@@ -116,22 +124,37 @@ def SchedulePost(data,browser):
         elem = browser.find_element_by_xpath("//input[@placeholder='dd/mm/yyyy']")
         elem.click()
         elem.send_keys(post_date)
+        elem.send_keys(Keys.RETURN)
+        elem.send_keys(Keys.TAB)
 
     if pandas.isnull(data['Post Time']) == False:
         hours = data['Post Time'].strftime("%H")
         minutes = data['Post Time'].strftime("%M")
+        
     else:
         #default time
         hours = "17"
         minutes = "00"
 
+
+
+
     #set hours
     elem = browser.find_element_by_xpath("//span[@aria-label='hours']/preceding-sibling::input")
+
+    elem.send_keys("0")
     elem.send_keys(hours)
+
+    
 
     #set minutes
     elem = browser.find_element_by_xpath("//span[@aria-label='minutes']/preceding-sibling::input")
+    elem.send_keys("0")
     elem.send_keys(minutes)
+    elem.send_keys(Keys.RETURN)
+
+    print("Submit")
+    time.sleep(2)
 
 
     #submit
